@@ -14,7 +14,6 @@ Paypal.setConfig = function(config) {
     }
   });
 };
-
 Meteor.methods({
   "PayPalPaymentList": function() {
     paypal_sdk.payment.list({
