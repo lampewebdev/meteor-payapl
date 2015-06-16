@@ -1,7 +1,7 @@
 Package.describe({
   name: 'lampe:paypal',
   summary: 'paypal-rest-sdk wrapper',
-  version: '0.1.0',
+  version: '0.1.1',
   git: 'https://github.com/lampe/meteor-payapl'
 });
 
