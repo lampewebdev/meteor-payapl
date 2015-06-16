@@ -42,6 +42,21 @@ Meteor.methods({
   },
   "payPalCreatePayPalPayment": function(payment) {
     this.unblock();
+    if(payment.currency === undefined){
+      payment.currency = "EUR";
+    }
+    if(payment.name === undefined){
+      payment.name = "Name";
+    }
+    if(payment.sku === undefined){
+      payment.sku = "SKU";
+    }
+    if(payment.quantity === undefined){
+      payment.quantity = "1";
+    }
+    if(payment.description === undefined){
+      payment.description = "This is the payment description.";
+    }
     var payment_details = {
       "intent": "sale",
       "payer": {
@@ -54,18 +69,18 @@ Meteor.methods({
       "transactions": [{
         "item_list": {
           "items": [{
-            "name": "Room",
-            "sku": "Room",
+            "name": payment.name,
+            "sku": payment.sku,
             "price": payment.totalPrice,
-            "currency": "EUR",
-            "quantity": '1'
+            "currency": payment.currency,
+            "quantity": payment.quantity
           }]
         },
         "amount": {
-          "currency": "EUR",
+          "currency": payment.currency,
           "total": payment.totalPrice
         },
-        "description": "This is the payment description."
+        "description": payment.description
       }]
     };
     var fut = new Future();
