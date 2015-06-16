@@ -5,7 +5,7 @@ Package.describe({
   git: ' /* Fill me in! */ '
 });
 
-Npm.depends({'paypal-rest-sdk': '1.2.1'});
+Npm.depends({'paypal-rest-sdk': '1.5.3'});
 
 Package.onUse(function(api) {
   api.versionsFrom('1.0');

@@ -1,35 +1,47 @@
 var paypal_sdk = Npm.require('paypal-rest-sdk');
 var Future = Npm.require('fibers/future');
 var Fiber = Npm.require('fibers');
-Paypal.payment = paypal_sdk.payment;
-Paypal.credit_card = paypal_sdk.credit_card;
 
 Paypal.setConfig = function(config) {
   paypal_sdk.configure(config);
   paypal_sdk.generate_token(function(error, token) {
     if (error) {
-      // console.error("generate Token error: " + error);
+      return new Meteor.Error(error, "could not get Token from Paypal");
     } else {
-      console.log("token: " + token);
+      return true;
     }
   });
+  return true;
 };
 Meteor.methods({
+  "PayPalPaymentDetails": function(payId) {
+    this.unblock();
+    var fut = new Future();
+    paypal_sdk.payment.get(payId, function(error, payment) {
+      if (error !== null) {
+        fut.throw(error);
+      } else {
+        fut.return(payment);
+      }
+    });
+    return fut.wait();
+  },
   "PayPalPaymentList": function() {
+    this.unblock();
+    var fut = new Future();
     paypal_sdk.payment.list({
       "count": 10
     }, function(error, payment_history) {
       if (error) {
-        console.log("error: " + error);
-        return error;
+        fut.error(error);
       } else {
-        console.log("error: " + payment_history);
-        return payment_history;
+        fut.return(payment_history);
       }
     });
-    return false;
+    return fut.wait();
   },
-  "payPalCreatePayment": function(data) {
+  "payPalCreatePayPalPayment": function(payment) {
+    this.unblock();
     var payment_details = {
       "intent": "sale",
       "payer": {
@@ -37,66 +49,47 @@ Meteor.methods({
       },
       "redirect_urls": {
         "return_url": Meteor.absoluteUrl() + "paypal/return",
-        "cancel_url": Meteor.absoluteUrl() + "paypal/cancle"
+        "cancel_url": Meteor.absoluteUrl() + "paypal/cancle/" + payment._id
       },
       "transactions": [{
         "item_list": {
           "items": [{
             "name": "Room",
             "sku": "Room",
-            "price": parseInt(data[0]),
+            "price": payment.totalPrice,
             "currency": "EUR",
-            "quantity": data[1]
+            "quantity": '1'
           }]
         },
         "amount": {
           "currency": "EUR",
-          "total": parseInt(data[0]) * parseInt(data[1])
+          "total": payment.totalPrice
         },
         "description": "This is the payment description."
       }]
     };
-    var bookingId = data[4];
-    // var booking = Booking.findOne(data[5]);
     var fut = new Future();
     paypal_sdk.payment.create(payment_details, function(error, payment) {
       if (error) {
-        fut.return(error);
+        fut.throw(error);
       } else {
-        console.log("else:", data[4]);
-        var bookingUpdate = Fiber(function(bookingId) {
-          console.log(bookingId);
-          Booking.update(bookingId, {
-            $set: {
-              "payment": payment
-            }
-          }, function(error) {
-            if (error)
-              console.log(error);
-          });
-        });
-        bookingUpdate.run(bookingId);
-        for (var i = 0; i < payment.links.length; i++) {
-          if (payment.links[i].rel === 'approval_url') {
-            fut.return(payment.links[i].href);
-          }
-        }
+        fut.return(payment);
       }
     });
     return fut.wait();
   },
-  "payPalExecutePayment": function(paymentId, paymentDetails) {
+  "payPalExecutePayment": function(paymentId, payerId) {
+    this.unblock();
     var fut = new Future();
-    paypal_sdk.payment.execute(paymentId, paymentDetails.payer_id, function(error, payment) {
+    console.log(paymentId);
+    console.log(payerId);
+    paypal_sdk.payment.execute(paymentId, {
+      payer_id: payerId
+    }, function(error, payment) {
       if (error) {
-        console.log(error);
-        fut.return("something went Wrong please Retry!");
+        fut.return(error);
       } else {
-        if (payment.state === 'approved') {
-          fut.return('approved');
-        } else {
-          fut.return('Not approved');
-        }
+        fut.return(payment);
       }
     });
     return fut.wait();
