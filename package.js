@@ -1,8 +1,8 @@
 Package.describe({
   name: 'lampe:paypal',
-  summary: 'paypal-rest-sdk wrapper ',
-  version: '0.0.1',
-  git: ' /* Fill me in! */ '
+  summary: 'paypal-rest-sdk wrapper',
+  version: '0.1.0',
+  git: 'https://github.com/lampe/meteor-payapl'
 });
 
 Npm.depends({'paypal-rest-sdk': '1.5.3'});
