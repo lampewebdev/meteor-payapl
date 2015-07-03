@@ -16,25 +16,15 @@
 //     }
 //   });
 // };
-// Paypal.payment.payPalCreatePayPalPayment = function(booking, callback) {
-//   Session.set("payPalStatus", "working");
-//   var bookingInfo = Booking.findOne({
-//     _id: booking._id
-//   });
-//   for (var attrname in booking) {
-//     bookingInfo[attrname] = booking[attrname];
+// Paypal.payment.payPalCreatePayPalPayment = function(obj, callback) {
+//   if (typeof postFunction !== 'function') {
+//     return new Meteor.Error("500", "postFunction has to be a function");
 //   }
-//   return Meteor.call("payPalCreatePayPalPayment", booking, function(error, result) {
-//     Session.set("payPalStatus", "pending");
-//     // Session.set("payPalApprovalUrl", result);
+//   return Meteor.call("payPalCreatePayPalPayment", obj, function(error, result) {
 //     if (error) {
 //       return new Meteor.Error("500", error);
 //     }
-//     if (typeof callback == 'function') {
-//       callback(result);
-//     } else {
-//       return new Meteor.Error("500", "Your Callback must be a function");
-//     }
+//     callback(result);
 //     return result;
 //   });
 // };

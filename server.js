@@ -1,7 +1,6 @@
 var paypal_sdk = Npm.require('paypal-rest-sdk');
 var Future = Npm.require('fibers/future');
 var Fiber = Npm.require('fibers');
-
 Paypal.setConfig = function(config) {
   paypal_sdk.configure(config);
   paypal_sdk.generate_token(function(error, token) {
@@ -13,6 +12,12 @@ Paypal.setConfig = function(config) {
   });
   return true;
 };
+Paypal.preFunctions = {
+  "payPalCreatePayPalPayment": function() {
+    return false;
+  }
+};
+
 Meteor.methods({
   "PayPalPaymentDetails": function(payId) {
     this.unblock();
@@ -42,29 +47,41 @@ Meteor.methods({
   },
   "payPalCreatePayPalPayment": function(payment) {
     this.unblock();
-    if(payment.currency === undefined){
+    if (payment.intent === undefined) {
+      payment.intent = "sale";
+    }
+    if (payment.paymentMethod === undefined) {
+      payment.paymentMethod = "paypal";
+    }
+    if (payment.currency === undefined) {
       payment.currency = "EUR";
     }
-    if(payment.name === undefined){
+    if (payment.name === undefined) {
       payment.name = "Name";
     }
-    if(payment.sku === undefined){
+    if (payment.sku === undefined) {
       payment.sku = "SKU";
     }
-    if(payment.quantity === undefined){
+    if (payment.quantity === undefined) {
       payment.quantity = "1";
     }
-    if(payment.description === undefined){
+    if (payment.description === undefined) {
       payment.description = "This is the payment description.";
     }
+    if (payment.returnUrl === undefined) {
+      payment.returnUrl = Meteor.absoluteUrl() + "paypal/return";
+    }
+    if (payment.cancelUrl === undefined) {
+      payment.cancelUrl = Meteor.absoluteUrl() + "paypal/cancle/" + payment._id;
+    }
     var payment_details = {
-      "intent": "sale",
+      "intent": payment.intent,
       "payer": {
-        "payment_method": "paypal"
+        "payment_method": payment.paymentMethod
       },
       "redirect_urls": {
-        "return_url": Meteor.absoluteUrl() + "paypal/return",
-        "cancel_url": Meteor.absoluteUrl() + "paypal/cancle/" + payment._id
+        "return_url": payment.returnUrl,
+        "cancel_url": payment.cancelUrl
       },
       "transactions": [{
         "item_list": {
@@ -96,13 +113,12 @@ Meteor.methods({
   "payPalExecutePayment": function(paymentId, payerId) {
     this.unblock();
     var fut = new Future();
-    console.log(paymentId);
-    console.log(payerId);
     paypal_sdk.payment.execute(paymentId, {
       payer_id: payerId
     }, function(error, payment) {
       if (error) {
-        fut.return(error);
+        console.log(error);
+        fut.throw(error);
       } else {
         fut.return(payment);
       }
